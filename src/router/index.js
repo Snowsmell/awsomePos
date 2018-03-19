@@ -4,6 +4,7 @@ import Pos from '@/components/page/Pos'
 
 Vue.use(Router)
 
+
 export default new Router({
   routes: [
     {
