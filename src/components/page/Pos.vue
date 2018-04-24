@@ -181,13 +181,13 @@ export default {
         })
         
       } else {
-        this.$message.error("请不要空结账");
+        this.$message.error("请不要空结账")
       }
     }
   },
   mounted: function() {
     var orderHeight = document.body.clientHeight;
-    document.getElementById("orderlist").style.height = orderHeight + "px";
+    document.getElementById("orderlist").style.height = orderHeight + "px"
   },
   created() {
     //常用商品
