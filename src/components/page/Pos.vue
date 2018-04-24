@@ -11,7 +11,7 @@
                   <el-table-column prop="price" label="金额" width="70"></el-table-column>
                   <el-table-column  label="操作" width="100" fixed="right">
                     <template slot-scope="scope">
-                      <el-button type="text" size="small" @click="delsingle(scope.row)">删除</el-button>
+                      <el-button type="text" size="small" @click="delSingle(scope.row)">删除</el-button>
                       <el-button type="text" size="small" @click="addOrderlist(scope.row)">增加</el-button>
                     </template>                  
                   </el-table-column>
@@ -25,8 +25,8 @@
                 </div>
                 <div class="div-btn">
                   <el-button type="warning" size="medium">挂单</el-button>
-                  <el-button type="danger" size="medium">删除</el-button>
-                  <el-button type="success" size="medium">结账</el-button>
+                  <el-button type="danger" size="medium" @click="delAllGoods()">删除</el-button>
+                  <el-button type="success" size="medium" @click="checkout()">结账</el-button>
                 </div>
 
               </el-tab-pane>
@@ -103,160 +103,190 @@
 </template>
 
 <script>
-  import axios from 'axios'
-  export default {
-    name:"Pos",
-    data(){
-      return{
-        tabledata:[],
-        oftenGoods:[],
-        type0Goods:[],
-        type1Goods:[],
-        type2Goods:[],
-        type3Goods:[],
-        totalMoney: 0, //订单总价格
-        totalCount: 0  //订单商品总数量
+import axios from "axios";
+export default {
+  name: "Pos",
+  data() {
+    return {
+      tabledata: [],
+      oftenGoods: [],
+      type0Goods: [],
+      type1Goods: [],
+      type2Goods: [],
+      type3Goods: [],
+      totalMoney: 0, //订单总价格
+      totalCount: 0 //订单商品总数量
+    };
+  },
+  methods: {
+    addOrderlist(good) {
+      //是否已经在列表中
+      this.totalCount = 0; //汇总数量清0
+      this.totalMoney = 0;
+      let isHave = false;
+      for (let i = 0; i < this.tabledata.length; i++) {
+        if (this.tabledata[i].goodsId == good.goodsId) {
+          isHave = true;
+        }
+      }
+      //根据数量判断写逻辑
+      if (isHave) {
+        let arr = this.tabledata.filter(o => o.goodsId == good.goodsId);
+        arr[0].count++;
+      } else {
+        let newGoods = {
+          goodsId: good.goodsId,
+          goodsName: good.goodsName,
+          price: good.price,
+          count: 1
+        };
+        this.tabledata.push(newGoods);
+      }
+      this.getsum();
+    },
+    //删除单独
+    delSingle(good) {
+      this.tabledata = this.tabledata.filter(o => o.goodsId != good.goodsId);
+      this.getsum();
+    },
+    delAllGoods() {
+      this.tabledata = [];
+      this.totalMoney = 0;
+      this.totalCount = 0;
+    },
+    getsum() {
+      this.totalCount = 0;
+      this.totalMoney = 0;
+      if (this.tabledata) {
+        this.tabledata.forEach(element => {
+          this.totalCount += element.count;
+          this.totalMoney = this.totalMoney + element.price * element.count;
+        });
       }
     },
-    methods:{
-      addOrderlist(good){
-        //是否已经在列表中
-        this.totalCount = 0; //汇总数量清0
-        this.totalMoney = 0;
-        let isHave = false;
-        for(let i=0;i<this.tabledata.length;i++){
-          if (this.tabledata[i].goodsId == good.goodsId){
-            isHave = true
-          }
-        }
-        //根据判断写逻辑
-        if(isHave){
-          //存在就加数量
-          let arr = this.tabledata.filter(o=>o.goodsId==good.goodsId)
-          arr[0].count++
-        }else{
-          let newGoods = {goodsId: good.goodsId,goodsName:good.goodsName, price: good.price, count: 1 }
-          this.tabledata.push(newGoods)
-        }
-        this.getsum()
-      },
-      //删除单独
-      delsingle(good){
-        this.tabledata=this.tabledata.filter(o=>o.goodsId != good.goodsId)
-        this.getsum()
-      },
-      getsum(){
-            this.totalCount = 0;
-            this.totalMoney = 0;
-            if (this.tabledata) {
-                this.tabledata.forEach((element) => {
-                    this.totalCount += element.count;
-                    this.totalMoney = this.totalMoney + (element.price * element.count);
-                });
-            }
+    checkout() {
+      //模拟结账
+      var that = this
+      if (this.totalCount != 0) {
+        var p = new Promise(function(res,rej){
+          var timer = 0;
+          that.$message({
+            message: "结账成功,开始执行promise",
+            type: "success"
+          });
+          setTimeout(res,4000)
+        });
+        p.then(()=>{
+          that.delAllGoods()
+        })
+        
+      } else {
+        this.$message.error("请不要空结账");
       }
-    },
-    mounted:function(){
-      var orderHeight=document.body.clientHeight
-      document.getElementById('orderlist').style.height = orderHeight+'px'
-    },
-    created(){
-      //常用商品
-      axios.get('http://jspang.com/DemoApi/oftenGoods.php')
-      .then(res=>{
-        // console.log(res);
-        this.oftenGoods = res.data
-      })
-      .catch(err=>{
-        console.log(err)
-      })
-      //类型商品
-      axios.get("http://jspang.com/DemoApi/typeGoods.php")
-      .then(res=>{
-        // console.log(res)
-        this.type0Goods=res.data[0]
-        this.type1Goods=res.data[1]
-        this.type2Goods=res.data[2]
-        this.type3Goods=res.data[3]
-      })
-      .catch(err=>{
-        console.log(err)
-      })
     }
+  },
+  mounted: function() {
+    var orderHeight = document.body.clientHeight;
+    document.getElementById("orderlist").style.height = orderHeight + "px";
+  },
+  created() {
+    //常用商品
+    axios
+      .get("http://jspang.com/DemoApi/oftenGoods.php")
+      .then(res => {
+        this.oftenGoods = res.data;
+      })
+      .catch(err => {
+        console.log(err);
+      });
+    //类型商品
+    axios
+      .get("http://jspang.com/DemoApi/typeGoods.php")
+      .then(res => {
+        // console.log(res)
+        this.type0Goods = res.data[0];
+        this.type1Goods = res.data[1];
+        this.type2Goods = res.data[2];
+        this.type3Goods = res.data[3];
+      })
+      .catch(err => {
+        console.log(err);
+      });
   }
+};
 </script>
 
 <style lang="less" scoped>
-.pos-order{
-  background:#f9fafc;
-  border-right:1px solid #c0ccda;
-  height:100%;
+.pos-order {
+  background: #f9fafc;
+  border-right: 1px solid #c0ccda;
+  height: 100%;
 }
-.div-btn{
-  margin-top:10px
+.div-btn {
+  margin-top: 10px;
 }
-.good-types{
-  clear:both;
-  border-top:none;
+.good-types {
+  clear: both;
+  border-top: none;
 }
- .title{
-       height: 20px;
-       border-bottom:1px solid #D3DCE6;
-       background-color: #F9FAFC;
-       padding:10px;
-   }
-   .often-goods-list{
-    border-bottom: 1px solid #C0CCDA;
-    height: auto;
-    overflow: hidden;
-    padding-bottom: 10px;
-    background-color: #F9FAFC;
-   }
-   .often-goods-list ul li{
-      list-style: none;
-      float:left;
-      border:1px solid #E5E9F2;
-      padding:10px;
-      margin:5px;
-      background-color:#fff;
-   }
-  .o-price{
-      color:#58B7FF; 
-   }
-   .cookList li {
-    list-style: none;
-    width: 23%;
-    border: 1px solid #E5E9F2;    
-    height: auot;
-    overflow: hidden;
-    background-color: #fff;
-    padding: 2px;
-    float: left;
-    margin: 2px;
-    cursor: pointer;
+.title {
+  height: 20px;
+  border-bottom: 1px solid #d3dce6;
+  background-color: #f9fafc;
+  padding: 10px;
+}
+.often-goods-list {
+  border-bottom: 1px solid #c0ccda;
+  height: auto;
+  overflow: hidden;
+  padding-bottom: 10px;
+  background-color: #f9fafc;
+}
+.often-goods-list ul li {
+  list-style: none;
+  float: left;
+  border: 1px solid #e5e9f2;
+  padding: 10px;
+  margin: 5px;
+  background-color: #fff;
+}
+.o-price {
+  color: #58b7ff;
+}
+.cookList li {
+  list-style: none;
+  width: 23%;
+  border: 1px solid #e5e9f2;
+  height: auot;
+  overflow: hidden;
+  background-color: #fff;
+  padding: 2px;
+  float: left;
+  margin: 2px;
+  cursor: pointer;
 }
 
 .cookList li span {
-    display: block;
-    float: left;
+  display: block;
+  float: left;
 }
 
 .foodImg {
-    width: 40%;
+  width: 40%;
 }
 
 .foodName {
-    font-size: 16px;    
-    padding-left: 10px;
-    color: brown;
+  font-size: 16px;
+  padding-left: 10px;
+  color: brown;
 }
 
 .foodPrice {
-    font-size: 16px;
-    padding-left: 10px;
-    padding-top: 10px;
+  font-size: 16px;
+  padding-left: 10px;
+  padding-top: 10px;
 }
-.el-tabs__nav-scroll{
-  margin-left:20px;
+.el-tabs__nav-scroll {
+  margin-left: 20px;
 }
 </style>
